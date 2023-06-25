@@ -123,14 +123,23 @@ void disassembler(uint8_t* codeBuffer, int pc)
 }
 
 struct Chip8 {
+    uint8_t RAM[0x1000];
     uint8_t V[16]; // General purpose register
     uint16_t I; // Memory address
     uint8_t DT; // Delay timer
     uint8_t ST; // Sound timer
     uint16_t PC; // Program counter
     uint8_t SP; // Stack pointer
-    uint16_t stack[16]; // the stack
-};
+    uint16_t stack[16]; // The stack
+
+    Chip8() = default;
+} chip8;
+
+
+void UnimplementedInstruction(Chip8& state) {
+    printf("Error: Unimplemented Instruction: %02x", state.RAM[state.PC]);
+    exit(1);
+}
 
 void emulator(uint8_t* codeBuffer, int pc)
 {

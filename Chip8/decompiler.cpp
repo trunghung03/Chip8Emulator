@@ -6,14 +6,30 @@
 
 #include "xoshiro.hpp"
 
-Xoshiro256 random(616328097, 108829579, 672443057, 239382367);
+Xoshiro256 xoshiro(616328097, 108829579, 672443057, 239382367);
 
 constexpr auto BYTE = 2;
+constexpr auto MAX_RAM = 0x1000;
 
-void disassembler(uint8_t* codeBuffer, int pc);
+struct Chip8 {
+	std::array<uint8_t, MAX_RAM> RAM;
+	std::array<uint8_t, 16> V; // General purpose register
+	uint16_t I; // Memory address
+	uint8_t DT; // Delay timer
+	uint8_t ST; // Sound timer
+	uint16_t PC; // Program counter
+	uint8_t SP; // Stack pointer
+	std::array<uint16_t, 16> stack; // The stack
+	std::array<uint8_t, 64 * 32> graphics;
+
+	Chip8() = default;
+} chip8;
+
+void disassembler(Chip8 state);
 void clearDisplay();
+void loadROM(uint8_t* codeBuffer, long size);
 
-int main(int argc, char* argv[]) {
+int main1(int argc, char* argv[]) {
 	FILE* fp = fopen("logo.ch8", "rb");
 	if (fp == NULL) {
 		puts("Error: unable to open file");
@@ -36,16 +52,16 @@ int main(int argc, char* argv[]) {
 	}
 	else fclose(fp);
 
-	uint16_t pc = 0;
-	for (; pc < fsize; pc += BYTE) disassembler(buffer, pc);
+	loadROM(buffer, fsize);
+	for (; chip8.PC < MAX_RAM; chip8.PC += BYTE) disassembler(chip8);
 
 	fclose(fp);
 	return 0;
 }
 
-void disassembler(uint8_t* codeBuffer, int pc) {
-	uint16_t code = (codeBuffer[pc] << 8) | codeBuffer[pc + 1];
-	printf("%04x\t", pc);
+void disassembler(Chip8 state) {
+	uint16_t code = (state.RAM[state.PC] << 8) | state.RAM[state.PC + 1];
+	printf("%04x\t", chip8.PC);
 
 	if (code == 0x00E0) printf("CLS");
 	else if (code == 0x00EE) printf("RET");
@@ -123,20 +139,15 @@ void disassembler(uint8_t* codeBuffer, int pc) {
 	printf("\n");
 }
 
-struct Chip8 {
-	std::array<uint8_t, 0x1000> RAM;
-	std::array<uint8_t, 16> V; // General purpose register
-	uint16_t I; // Memory address
-	uint8_t DT; // Delay timer
-	uint8_t ST; // Sound timer
-	uint16_t PC; // Program counter
-	uint8_t SP; // Stack pointer
-	std::array<uint16_t, 16> stack; // The stack
-	std::array<uint8_t, 64 * 32> graphics;
 
-	Chip8() = default;
-} chip8;
 
+
+void loadROM(uint8_t* codeBuffer, long size) {
+	chip8.PC = 0x200;
+	for (uint16_t i = 0; i < size; i++) {
+		chip8.RAM[chip8.PC] = codeBuffer[i];
+	}
+}
 
 void UnimplementedInstruction() {
 	printf("Error: Unimplemented Instruction: %02x", chip8.RAM[chip8.PC]);
@@ -327,7 +338,7 @@ void emulator(uint8_t* codeBuffer, int pc) {
 	// which is then ANDed with the value kk.The results are stored in Vx.
 	// See instruction 8xy2 for more information on AND.
 	else if (code >= 0xC000 && code <= 0xCFFF) {
-		chip8.V[(code & 0x0F00) >> 8] = random.randrange(0, 255) & (code & 0xFF);
+		chip8.V[(code & 0x0F00) >> 8] = xoshiro.randrange(0, 255) & (code & 0xFF);
 	}
 
 	else if (code >= 0xD000 && code <= 0xDFFF) UnimplementedInstruction(); // Dxyn

@@ -241,7 +241,7 @@ void emulator(uint8_t* codeBuffer, int pc)
             // then stores the result in Vx. A bitwise OR compares the correponding bits from two values, 
             // and if either bit is 1, then the same bit in the result is also 1. Otherwise, it is 0.
         case 0x1:
-            chip8.V[(code & 0x0F00) >> 8] |= chip8.V[(code & 0x00F0) >> 4)];
+            chip8.V[(code & 0x0F00) >> 8] |= chip8.V[(code & 0x00F0) >> 4];
             break;
 
             // Set Vx = Vx AND Vy.
@@ -249,7 +249,7 @@ void emulator(uint8_t* codeBuffer, int pc)
             // then stores the result in Vx.A bitwise AND compares the corrseponding bits from two values, 
             // and if both bits are 1, then the same bit in the result is also 1. Otherwise, it is 0.
         case 0x2:
-            chip8.V[(code & 0x0F00) >> 8] &= chip8.V[(code & 0x00F0) >> 4)];
+            chip8.V[(code & 0x0F00) >> 8] &= chip8.V[(code & 0x00F0) >> 4];
             break;
 
             // Set Vx = Vx XOR Vy.
@@ -257,7 +257,7 @@ void emulator(uint8_t* codeBuffer, int pc)
             // An exclusive OR compares the corrseponding bits from two values, 
             // and if the bits are not both the same, then the corresponding bit in the result is set to 1. Otherwise, it is 0.
         case 0x3:
-            chip8.V[(code & 0x0F00) >> 8] ^= chip8.V[(code & 0x00F0) >> 4)];
+            chip8.V[(code & 0x0F00) >> 8] ^= chip8.V[(code & 0x00F0) >> 4];
             break;
 
             // Set Vx = Vx + Vy, set VF = carry.
@@ -265,7 +265,7 @@ void emulator(uint8_t* codeBuffer, int pc)
             // If the result is greater than 8 bits(i.e., > 255, ) VF is set to 1, otherwise 0. 
             // Only the lowest 8 bits of the result are kept, and stored in Vx.
         case 0x4:
-            result = chip8.V[(code & 0x0F00) >> 8] + chip8.V[(code & 0x00F0) >> 4)];
+            result = chip8.V[(code & 0x0F00) >> 8] + chip8.V[(code & 0x00F0) >> 4];
             if (result > 255)
             {
                 chip8.V[0xF] = 1;
@@ -281,10 +281,10 @@ void emulator(uint8_t* codeBuffer, int pc)
         // If Vx > Vy, then VF is set to 1, otherwise 0. 
         // Then Vy is subtracted from Vx, and the results stored in Vx.
         case 0x5:
-            if (chip8.V[(code & 0x0F00) >> 8] > chip8.V[(code & 0x00F0) >> 4)] chip8.V[0xF] = 1;
+            if (chip8.V[(code & 0x0F00) >> 8] > chip8.V[(code & 0x00F0) >> 4]) chip8.V[0xF] = 1;
             else chip8.V[0xF] = 0;
 
-            result = chip8.V[(code & 0x0F00) >> 8] - chip8.V[(code & 0x00F0) >> 4)];
+            result = chip8.V[(code & 0x0F00) >> 8] - chip8.V[(code & 0x00F0) >> 4];
             chip8.V[(code & 0x0F00) >> 8] = result & 0xFF;
             break;
 

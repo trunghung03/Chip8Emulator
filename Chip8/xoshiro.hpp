@@ -1,5 +1,7 @@
-
 #include <stdint.h>
+
+// Xoshiro256++ written by David Blackman and Sebastiano Vigna.
+// This is adapted to generate 8 bit numbers
 
 class Xoshiro256 {
 private:
@@ -8,7 +10,7 @@ private:
 		return (x << k) | (x >> (64 - k));
 	}
 public:
-	uint64_t rand(void) {
+	uint64_t randint(void) {
 		const uint64_t result = rotl(s[0] + s[3], 23) + s[0];
 
 		const uint64_t t = s[1] << 17;
@@ -30,5 +32,9 @@ public:
 		s[1] = s2;
 		s[2] = s3;
 		s[3] = s4;
+	}
+
+	inline uint8_t randrange(uint64_t min, uint64_t max) {
+		return static_cast<uint8_t>(min + (randint() % (max - min + 1)));
 	}
 };

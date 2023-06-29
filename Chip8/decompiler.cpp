@@ -4,6 +4,10 @@
 #include <cstdlib>
 #include <array>
 
+#include "xoshiro.hpp"
+
+Xoshiro256 random(616328097, 108829579, 672443057, 239382367);
+
 constexpr auto BYTE = 2;
 
 void disassembler(uint8_t* codeBuffer, int pc);
@@ -297,18 +301,33 @@ void emulator(uint8_t* codeBuffer, int pc) {
 		} // 0x8xy0 -> 0x8xyE
 	}
 
-	else if (code >= 0x9000 && code <= 0x9FFF) printf("SNE V%d, V%d", (code & 0x0F00) >> 8, (code & 0x00F0) >> 4); // 9xy0
 
-	else if (code >= 0xA000 && code <= 0xAFFF) printf("LD I, $%04x", code & 0xFFF); // Annn
-	else if (code >= 0xB000 && code <= 0xBFFF) printf("JP V0, $%04x", code & 0xFFF); // Bnnn
+	// Skip next instruction if Vx != Vy.
+	// The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.
+	else if (code >= 0x9000 && code <= 0x9FFF) {
+		if (chip8.V[(code & 0x0F00) >> 8] != chip8.V[(code & 0x00F0) >> 4]) {
+			chip8.PC += 2;
+		}
+	}
+
+	// Set I = nnn.
+	// The value of register I is set to nnn.
+	else if (code >= 0xA000 && code <= 0xAFFF) {
+		chip8.I = code & 0x0FFF;
+	}
+
+	// Jump to location nnn + V0.
+	// The program counter is set to nnn plus the value of V0.
+	else if (code >= 0xB000 && code <= 0xBFFF) {
+		chip8.PC = (code & 0x0FFF) + chip8.V[0];
+	}
 
 	// Set Vx = random byte AND kk.
-
 	// The interpreter generates a random number from 0 to 255, 
 	// which is then ANDed with the value kk.The results are stored in Vx.
 	// See instruction 8xy2 for more information on AND.
 	else if (code >= 0xC000 && code <= 0xCFFF) {
-
+		chip8.V[(code & 0x0F00) >> 8] = random.randrange(0, 255) & (code & 0xFF);
 	}
 
 	else if (code >= 0xD000 && code <= 0xDFFF) UnimplementedInstruction(); // Dxyn

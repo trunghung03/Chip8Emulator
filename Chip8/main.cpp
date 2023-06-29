@@ -79,4 +79,11 @@ void SetPixelsToTexture(std::array<uint8_t, 9Ui64>& states, sf::Texture& texture
 * Create a sf::Texture, and set the individual pixels on that by using update.
 * 
 * Another naive way is to just draw squares,
+* 
+* Problem: not knowing how to load the program. Cowgod said it programs starts at 0x0200, 
+* so do we just load prog to 0x0200 or from 0x0000. 
+* It loads from 0x200 as per Ayman Bagabas' guide (PC starts at 0x200)
+*
+* 
+* Graphics is stored as a separate array
 * */

@@ -227,51 +227,51 @@ void emulator(uint8_t* codeBuffer, int pc)
     {
         uint8_t lastDigit = (code & 0x000F);
         uint8_t result = 0;
-        switch (lastDigit) 
+        switch (lastDigit)
         {
 
-        // Set Vx = Vy.
-        // Stores the value of register Vy in register Vx.
+            // Set Vx = Vy.
+            // Stores the value of register Vy in register Vx.
         case 0x0:
             chip8.V[(code & 0x0F00) >> 8] = chip8.V[(code & 0x00F0) >> 4];
             break;
 
-        // Set Vx = Vx OR Vy.
-        // Performs a bitwise OR on the values of Vx and Vy, 
-        // then stores the result in Vx. A bitwise OR compares the correponding bits from two values, 
-        // and if either bit is 1, then the same bit in the result is also 1. Otherwise, it is 0.
+            // Set Vx = Vx OR Vy.
+            // Performs a bitwise OR on the values of Vx and Vy, 
+            // then stores the result in Vx. A bitwise OR compares the correponding bits from two values, 
+            // and if either bit is 1, then the same bit in the result is also 1. Otherwise, it is 0.
         case 0x1:
             chip8.V[(code & 0x0F00) >> 8] |= chip8.V[(code & 0x00F0) >> 4)];
             break;
 
-        // Set Vx = Vx AND Vy.
-        // Performs a bitwise AND on the values of Vx and Vy, 
-        // then stores the result in Vx.A bitwise AND compares the corrseponding bits from two values, 
-        // and if both bits are 1, then the same bit in the result is also 1. Otherwise, it is 0.
+            // Set Vx = Vx AND Vy.
+            // Performs a bitwise AND on the values of Vx and Vy, 
+            // then stores the result in Vx.A bitwise AND compares the corrseponding bits from two values, 
+            // and if both bits are 1, then the same bit in the result is also 1. Otherwise, it is 0.
         case 0x2:
             chip8.V[(code & 0x0F00) >> 8] &= chip8.V[(code & 0x00F0) >> 4)];
             break;
 
-        // Set Vx = Vx XOR Vy.
-        // Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the result in Vx.
-        // An exclusive OR compares the corrseponding bits from two values, 
-        // and if the bits are not both the same, then the corresponding bit in the result is set to 1. Otherwise, it is 0.
+            // Set Vx = Vx XOR Vy.
+            // Performs a bitwise exclusive OR on the values of Vx and Vy, then stores the result in Vx.
+            // An exclusive OR compares the corrseponding bits from two values, 
+            // and if the bits are not both the same, then the corresponding bit in the result is set to 1. Otherwise, it is 0.
         case 0x3:
             chip8.V[(code & 0x0F00) >> 8] ^= chip8.V[(code & 0x00F0) >> 4)];
             break;
 
-        // Set Vx = Vx + Vy, set VF = carry.
-        // The values of Vx and Vy are added together.
-        // If the result is greater than 8 bits(i.e., > 255, ) VF is set to 1, otherwise 0. 
-        // Only the lowest 8 bits of the result are kept, and stored in Vx.
-        case 0x4: 
+            // Set Vx = Vx + Vy, set VF = carry.
+            // The values of Vx and Vy are added together.
+            // If the result is greater than 8 bits(i.e., > 255, ) VF is set to 1, otherwise 0. 
+            // Only the lowest 8 bits of the result are kept, and stored in Vx.
+        case 0x4:
         {
             result = chip8.V[(code & 0x0F00) >> 8] + chip8.V[(code & 0x00F0) >> 4)];
-            if (result > 255) 
+            if (result > 255)
             {
                 chip8.V[0xF] = 1;
             }
-            else 
+            else
             {
                 chip8.V[0xF] = 0;
             }
@@ -291,8 +291,8 @@ void emulator(uint8_t* codeBuffer, int pc)
             chip8.V[(code & 0x0F00) >> 8] = result & 0xFF;
             break;
 
-        // Set Vx = Vx SHR 1.
-        // If the least - significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
+            // Set Vx = Vx SHR 1.
+            // If the least - significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
         case 0x6:
             if (1 & chip8.V[(code & 0x0F00) >> 8]) chip8.V[0xF] = 1;
             else chip8.V[0xF] = 0;
@@ -300,8 +300,8 @@ void emulator(uint8_t* codeBuffer, int pc)
             chip8.V[(code & 0x0F00) >> 8] /= 2;
             break;
 
-        // Set Vx = Vy - Vx, set VF = NOT borrow.
-        // If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and the results stored in Vx.
+            // Set Vx = Vy - Vx, set VF = NOT borrow.
+            // If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and the results stored in Vx.
         case 0x7:
             if (chip8.V[(code & 0x00F0) >> 4] > chip8.V[(code & 0x0F00) >> 8]) chip8.V[0xF] = 1;
             else chip8.V[0xF] = 0;
@@ -309,8 +309,8 @@ void emulator(uint8_t* codeBuffer, int pc)
             chip8.V[(code & 0x0F00) >> 8] = chip8.V[(code & 0x00F0) >> 4] - chip8.V[(code & 0x0F00) >> 8];
             break;
 
-        // Set Vx = Vx SHL 1.
-        // If the most - significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
+            // Set Vx = Vx SHL 1.
+            // If the most - significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
         case 0xE:
             if (1 << 7 & chip8.V[(code & 0x0F00) >> 8]) chip8.V[0xF] = 1;
             else chip8.V[0xF] = 0;
@@ -320,7 +320,8 @@ void emulator(uint8_t* codeBuffer, int pc)
             printf("OP not found (%04x)", code);
             break;
         }
-    } // 0x8xy0 -> 0x8xyE
+        } // 0x8xy0 -> 0x8xyE
+    }
 
     else if (code >= 0x9000 && code <= 0x9FFF) printf("SNE V%d, V%d", (code & 0x0F00) >> 8, (code & 0x00F0) >> 4); // 9xy0
 

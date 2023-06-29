@@ -265,7 +265,6 @@ void emulator(uint8_t* codeBuffer, int pc)
             // If the result is greater than 8 bits(i.e., > 255, ) VF is set to 1, otherwise 0. 
             // Only the lowest 8 bits of the result are kept, and stored in Vx.
         case 0x4:
-        {
             result = chip8.V[(code & 0x0F00) >> 8] + chip8.V[(code & 0x00F0) >> 4)];
             if (result > 255)
             {
@@ -277,13 +276,11 @@ void emulator(uint8_t* codeBuffer, int pc)
             }
             chip8.V[(code & 0x0F00) >> 8] = result & 0xFF;
             break;
-        }
 
         // Set Vx = Vx - Vy, set VF = NOT borrow.
         // If Vx > Vy, then VF is set to 1, otherwise 0. 
         // Then Vy is subtracted from Vx, and the results stored in Vx.
         case 0x5:
-        {
             if (chip8.V[(code & 0x0F00) >> 8] > chip8.V[(code & 0x00F0) >> 4)] chip8.V[0xF] = 1;
             else chip8.V[0xF] = 0;
 
@@ -319,7 +316,6 @@ void emulator(uint8_t* codeBuffer, int pc)
         default:
             printf("OP not found (%04x)", code);
             break;
-        }
         } // 0x8xy0 -> 0x8xyE
     }
 

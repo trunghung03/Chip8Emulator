@@ -29,7 +29,7 @@ void disassembler(Chip8 state);
 void clearDisplay();
 void loadROM(uint8_t* codeBuffer, long size);
 
-int main1(int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
 	FILE* fp = fopen("logo.ch8", "rb");
 	if (fp == NULL) {
 		puts("Error: unable to open file");
@@ -53,7 +53,7 @@ int main1(int argc, char* argv[]) {
 	else fclose(fp);
 
 	loadROM(buffer, fsize);
-	for (; chip8.PC < MAX_RAM; chip8.PC += BYTE) disassembler(chip8);
+	for (; chip8.PC < MAX_RAM - 1; chip8.PC += BYTE) disassembler(chip8);
 
 	fclose(fp);
 	return 0;
@@ -138,8 +138,6 @@ void disassembler(Chip8 state) {
 
 	printf("\n");
 }
-
-
 
 
 void loadROM(uint8_t* codeBuffer, long size) {

@@ -10,7 +10,7 @@ constexpr auto HEIGHT = 3;
 
 void SetPixelsToTexture(std::array<uint8_t, 9Ui64>& states, sf::Texture& texture);
 
-int main2() {
+int main1() {
 	sf::RenderWindow window(sf::VideoMode(600, 600), "SFML works!");
 	window.setFramerateLimit(60);
 

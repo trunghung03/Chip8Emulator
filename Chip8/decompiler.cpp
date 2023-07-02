@@ -353,57 +353,73 @@ void emulator(Chip8 &chip8) {
 	else if (code >= 0xE09E && code <= 0xEF9E) UnimplementedInstruction(chip8); // Ex9E
 	else if (code >= 0xE0A1 && code <= 0xEFA1) UnimplementedInstruction(chip8); // ExA1
 
-	// Set Vx = delay timer value.
-	// The value of DT is placed into Vx.
-	else if (code >= 0xF007 && code <= 0xFF07) {
-		chip8.V[(code & 0x0F00) >> 8] = chip8.DT;
-	}
-	else if (code >= 0xF00A && code <= 0xFF0A) UnimplementedInstruction(chip8); // Fx0A
+	
+	else if (code >= 0xF000 && code <= 0xFFFF) {
+		uint16_t lastDigit = code & 0x00FF;
+		uint8_t Vx = 0;
 
-	// Set delay timer = Vx.
-	// DT is set equal to the value of Vx.
-	else if (code >= 0xF015 && code <= 0xFF15) {
-		chip8.DT = chip8.V[(code & 0x0F00) >> 8];
-	}
+		switch (lastDigit) {
+		// Set Vx = delay timer value.
+		// The value of DT is placed into Vx.
+		case 0x07:
+			chip8.V[(code & 0x0F00) >> 8] = chip8.DT;
+			break;
 
-	// Set sound timer = Vx.
-	// ST is set equal to the value of Vx.
-	else if (code >= 0xF018 && code <= 0xFF18) {
-		chip8.ST = chip8.V[(code & 0x0F00) >> 8];
-	}
+		case 0x0A:
+			UnimplementedInstruction(chip8); // Fx0A
+			break;
 
-	// Set I = I + Vx.
-	// The values of I and Vx are added, and the results are stored in I.
-	else if (code >= 0xF01E && code <= 0xFF1E) {
-		chip8.I += ((code & 0x0F00) >> 8);
-	}
+		// Set delay timer = Vx.
+		// DT is set equal to the value of Vx.
+		case 0x15:
+			chip8.DT = chip8.V[(code & 0x0F00) >> 8];
+			break;
 
+		// Set sound timer = Vx.
+		// ST is set equal to the value of Vx.
+		case 0x18:
+			chip8.ST = chip8.V[(code & 0x0F00) >> 8];
+			break;
 
-	else if (code >= 0xF029 && code <= 0xFF29) UnimplementedInstruction(chip8); // Fx29
+		// Set I = I + Vx.
+		// The values of I and Vx are added, and the results are stored in I.
+		case 0x1E:
+			chip8.I += ((code & 0x0F00) >> 8);
+			break;
 
-	// Store BCD representation of Vx in memory locations I, I+1, and I+2.
-	// The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, 
-	// the tens digit at location I + 1, and the ones digit at location I + 2.
-	else if (code >= 0xF033 && code <= 0xFF33) {
-		uint8_t Vx = chip8.V[(code & 0x0F00) >> 8];
-		chip8.RAM[chip8.I + 2] = Vx % 10; // ones digit
-		chip8.RAM[chip8.I + 1] = Vx / 10 % 10; // tens digit
-		chip8.RAM[chip8.I]     = Vx / 100 % 10; // hundreds digit
-	}
+		case 0x29:
+			UnimplementedInstruction(chip8); // Fx29
+			break;
 
-	// Store registers V0 through Vx in memory starting at location I.
-	// The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
-	else if (code >= 0xF055 && code <= 0xFF55) {
-		for (uint8_t i = 0x0; i <= ((code & 0x0F00) >> 8); i++) {
-			chip8.RAM[chip8.I + i] = chip8.V[i];
-		}
-	}
+		// Store BCD representation of Vx in memory locations I, I+1, and I+2.
+		// The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, 
+		// the tens digit at location I + 1, and the ones digit at location I + 2.
+		case 0x33:
+			Vx = chip8.V[(code & 0x0F00) >> 8];
+			chip8.RAM[chip8.I + 2] = Vx % 10; // ones digit
+			chip8.RAM[chip8.I + 1] = Vx / 10 % 10; // tens digit
+			chip8.RAM[chip8.I] = Vx / 100 % 10; // hundreds digit
+			break;
 
-	// Read registers V0 through Vx from memory starting at location I.
-	// The interpreter reads values from memory starting at location I into registers V0 through Vx.
-	else if (code >= 0xF065 && code <= 0xFF65) {
-		for (uint8_t i = 0x0; i <= ((code & 0x0F00) >> 8); i++) {
-			chip8.V[i] = chip8.RAM[chip8.I + i];
+		// Store registers V0 through Vx in memory starting at location I.
+		// The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
+		case 0x55:
+			for (uint8_t i = 0x0; i <= ((code & 0x0F00) >> 8); i++) {
+				chip8.RAM[chip8.I + i] = chip8.V[i];
+			}
+			break;
+
+		// Read registers V0 through Vx from memory starting at location I.
+		// The interpreter reads values from memory starting at location I into registers V0 through Vx.
+		case 0x65:
+			for (uint8_t i = 0x0; i <= ((code & 0x0F00) >> 8); i++) {
+				chip8.V[i] = chip8.RAM[chip8.I + i];
+			}
+			break;
+
+		default:
+			printf("OP not found (%04x)", code);
+			break;
 		}
 	}
 

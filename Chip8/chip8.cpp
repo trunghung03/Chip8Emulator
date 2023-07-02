@@ -1,4 +1,4 @@
-#include "decompiler.hpp"
+#include "chip8.hpp"
 
 void LoadROM(std::string fileName, Chip8 &chip8) {
 	FILE* fp = fopen(fileName.c_str(), "rb");

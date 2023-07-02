@@ -7,7 +7,7 @@
 #include <iostream>
 #include <array>
 
-#include "decompiler.hpp"
+#include "chip8.hpp"
 
 struct Chip8 chip8;
 

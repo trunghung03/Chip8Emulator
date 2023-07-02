@@ -3,3 +3,5 @@
 An attempt at writing an "emulator" for the Chip8.
 
 Most of the opcodes are working, as well as graphics.
+
+![Screenshot](photos/screenshot.png)

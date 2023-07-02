@@ -11,7 +11,7 @@
 
 struct Chip8 chip8;
 
-sf::RenderWindow window(sf::VideoMode(1200, 600), "SFML works!");
+sf::RenderWindow window(sf::VideoMode(1200, 600), "Chip8 VM");
 sf::Texture texture;
 sf::Sprite sprite;
 
@@ -21,9 +21,9 @@ void inputHandling();
 
 void initGraphics();
 
-int main() {
+int main(int argc, char* argv[]) {
 	initGraphics();
-	LoadROM("logo3.ch8", chip8);
+	LoadROM(argv[1], chip8);
 
 	while (window.isOpen()) {
 		inputHandling();

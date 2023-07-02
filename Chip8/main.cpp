@@ -23,7 +23,7 @@ void initGraphics();
 
 int main() {
 	initGraphics();
-	LoadROM("logo2.ch8", chip8);
+	LoadROM("logo3.ch8", chip8);
 
 	while (window.isOpen()) {
 		inputHandling();

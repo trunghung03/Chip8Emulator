@@ -1,15 +1,4 @@
 #include "decompiler.hpp"
-#include "xoshiro.hpp"
-
-/*
-int main1(int argc, char* argv[]) {
-	LoadROM("logo.ch8", chip8);
-
-	//for (; chip8.PC < MAX_RAM - 1; chip8.PC += BYTE) decompiler(chip8);
-
-	return 0;
-}
-*/
 
 void LoadROM(std::string fileName, Chip8 &chip8) {
 	FILE* fp = fopen(fileName.c_str(), "rb");
@@ -146,8 +135,6 @@ void emulator(Chip8 &chip8) {
 	else if (code == 0x00EE) {
 		chip8.PC = chip8.stack[chip8.SP];
 		chip8.SP--;
-
-		nextStep = 0;
 	}
 
 	// Jump to location nnn.
@@ -173,18 +160,14 @@ void emulator(Chip8 &chip8) {
 	else if (code >= 0x3000 && code <= 0x3FFF) {
 		if (chip8.V[(code & 0x0F00) >> 8] == (code & 0x00FF)) {
 			chip8.PC += 2;
-
-			nextStep = 0;
 		}
 	}
 
 	// Skip next instruction if Vx != kk.
 	// The interpreter compares register Vx to kk, and if they are not equal, increments the program counter by 2.
 	else if (code >= 0x4000 && code <= 0x4FFF) {
-		if (chip8.V[(code & 0x0F00) >> 8] == (code & 0x00FF)) {
+		if (chip8.V[(code & 0x0F00) >> 8] != (code & 0x00FF)) {
 			chip8.PC += 2;
-
-			nextStep = 0;
 		}
 	}
 
@@ -392,7 +375,7 @@ void emulator(Chip8 &chip8) {
 	// Set I = I + Vx.
 	// The values of I and Vx are added, and the results are stored in I.
 	else if (code >= 0xF01E && code <= 0xFF1E) {
-		chip8.I = (code & 0x0F00) >> 8;
+		chip8.I += ((code & 0x0F00) >> 8);
 	}
 
 
@@ -402,15 +385,16 @@ void emulator(Chip8 &chip8) {
 	// The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, 
 	// the tens digit at location I + 1, and the ones digit at location I + 2.
 	else if (code >= 0xF033 && code <= 0xFF33) {
-		chip8.RAM[chip8.I] = chip8.V[(code & 0x0F00) >> 8] % 10; // ones digit
-		chip8.RAM[chip8.I + 1] = chip8.V[(code & 0x0F00) >> 8] / 10 % 10; // tens digit
-		chip8.RAM[chip8.I + 2] = chip8.V[(code & 0x0F00) >> 8] / 100 % 10; // hundreds digit
+		uint8_t Vx = chip8.V[(code & 0x0F00) >> 8];
+		chip8.RAM[chip8.I + 2] = Vx % 10; // ones digit
+		chip8.RAM[chip8.I + 1] = Vx / 10 % 10; // tens digit
+		chip8.RAM[chip8.I]     = Vx / 100 % 10; // hundreds digit
 	}
 
 	// Store registers V0 through Vx in memory starting at location I.
 	// The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
 	else if (code >= 0xF055 && code <= 0xFF55) {
-		for (uint8_t i = 0x0; i <= 0xF; i++) {
+		for (uint8_t i = 0x0; i <= ((code & 0x0F00) >> 8); i++) {
 			chip8.RAM[chip8.I + i] = chip8.V[i];
 		}
 	}
@@ -418,7 +402,7 @@ void emulator(Chip8 &chip8) {
 	// Read registers V0 through Vx from memory starting at location I.
 	// The interpreter reads values from memory starting at location I into registers V0 through Vx.
 	else if (code >= 0xF065 && code <= 0xFF65) {
-		for (uint8_t i = 0x0; i <= 0xF; i++) {
+		for (uint8_t i = 0x0; i <= ((code & 0x0F00) >> 8); i++) {
 			chip8.V[i] = chip8.RAM[chip8.I + i];
 		}
 	}

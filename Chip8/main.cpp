@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <SFML/Graphics.hpp>
 #include <SFML/Config.hpp>
 #include <SFML/System.hpp>
@@ -5,49 +7,59 @@
 #include <iostream>
 #include <array>
 
-constexpr auto WIDTH = 3;
-constexpr auto HEIGHT = 3;
+#include "decompiler.hpp"
 
-void SetPixelsToTexture(std::array<uint8_t, 9Ui64>& states, sf::Texture& texture);
+struct Chip8 chip8;
 
-int main1() {
-	sf::RenderWindow window(sf::VideoMode(600, 600), "SFML works!");
-	window.setFramerateLimit(60);
+sf::RenderWindow window(sf::VideoMode(1200, 600), "SFML works!");
+sf::Texture texture;
+sf::Sprite sprite;
 
-	std::array<uint8_t, WIDTH* HEIGHT> states =
-	{
-		1, 0, 1,
-		0, 1, 0,
-		1, 0, 1
-	};
+void SetPixelsToTexture(std::array<uint8_t, 2048Ui64>& states);
+void render();
+void inputHandling();
 
-	sf::Texture texture;
-	texture.create(WIDTH, HEIGHT);
+void initGraphics();
 
-	sf::Sprite sprite;
-	sprite.setScale(200.0, 200.0);
-
-	bool useState = true;
+int main() {
+	initGraphics();
+	LoadROM("logo2.ch8", chip8);
 
 	while (window.isOpen()) {
-		sf::Event event;
-		while (window.pollEvent(event)) {
-			if (event.type == sf::Event::Closed)
-				window.close();
-		}
+		inputHandling();
 
-		SetPixelsToTexture(states, texture);
+		emulator(chip8);
+
+		SetPixelsToTexture(chip8.graphics);
 		sprite.setTexture(texture);
 
-		window.clear();
-		window.draw(sprite);
-		window.display();
+		render();
 	}
 
 	return 0;
 }
 
-void SetPixelsToTexture(std::array<uint8_t, 9Ui64>& states, sf::Texture& texture) {
+void initGraphics() {
+	window.setFramerateLimit(60);
+	texture.create(WIDTH, HEIGHT);
+	sprite.setScale(18.0, 18.0);
+}
+
+void inputHandling() {
+	sf::Event event;
+	while (window.pollEvent(event)) {
+		if (event.type == sf::Event::Closed)
+			window.close();
+	}
+}
+
+void render() {
+	window.clear();
+	window.draw(sprite);
+	window.display();
+}
+
+void SetPixelsToTexture(std::array<uint8_t, 2048Ui64>& states) {
 	sf::Uint8* pixels = new sf::Uint8[WIDTH * HEIGHT * 4]; // * 4 because pixels have 4 components (RGBA)
 	for (int i = 0; i < states.size(); i++) {
 		if (states[i]) {

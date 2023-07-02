@@ -1,36 +1,18 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include <cstdio>
-#include <cstdint>
-#include <cstdlib>
-#include <array>
-
+#include "decompiler.hpp"
 #include "xoshiro.hpp"
 
-Xoshiro256 xoshiro(616328097, 108829579, 672443057, 239382367);
+/*
+int main1(int argc, char* argv[]) {
+	LoadROM("logo.ch8", chip8);
 
-constexpr auto BYTE = 2;
-constexpr auto MAX_RAM = 0x1000;
+	//for (; chip8.PC < MAX_RAM - 1; chip8.PC += BYTE) decompiler(chip8);
 
-struct Chip8 {
-	std::array<uint8_t, MAX_RAM> RAM;
-	std::array<uint8_t, 16> V; // General purpose register
-	uint16_t I; // Memory address
-	uint8_t DT; // Delay timer
-	uint8_t ST; // Sound timer
-	uint16_t PC; // Program counter
-	uint8_t SP; // Stack pointer
-	std::array<uint16_t, 16> stack; // The stack
-	std::array<uint8_t, 64 * 32> graphics;
+	return 0;
+}
+*/
 
-	Chip8() = default;
-} chip8;
-
-void disassembler(Chip8 state);
-void clearDisplay();
-void loadROM(uint8_t* codeBuffer, long size);
-
-int main(int argc, char* argv[]) {
-	FILE* fp = fopen("logo.ch8", "rb");
+void LoadROM(std::string fileName, Chip8 &chip8) {
+	FILE* fp = fopen(fileName.c_str(), "rb");
 	if (fp == NULL) {
 		puts("Error: unable to open file");
 		exit(1);
@@ -40,7 +22,7 @@ int main(int argc, char* argv[]) {
 	long fsize = ftell(fp);
 	fseek(fp, 0L, SEEK_SET);
 
-	uint8_t* buffer = static_cast<uint8_t*>(malloc(fsize));
+	uint8_t* buffer = (uint8_t*)malloc(fsize);
 	if (buffer == NULL) {
 		puts("Error: failed to malloc");
 		exit(1);
@@ -52,17 +34,26 @@ int main(int argc, char* argv[]) {
 	}
 	else fclose(fp);
 
-	loadROM(buffer, fsize);
-	for (; chip8.PC < MAX_RAM - 1; chip8.PC += BYTE) disassembler(chip8);
-
-	fclose(fp);
-	return 0;
+	ROMtoRAM(buffer, fsize, chip8);
 }
 
-void disassembler(Chip8 state) {
-	uint16_t code = (state.RAM[state.PC] << 8) | state.RAM[state.PC + 1];
-	printf("%04x\t", chip8.PC);
+void ROMtoRAM(uint8_t* codeBuffer, long size, Chip8 &chip8) {
+	chip8.PC = 0x200;
+	for (uint16_t i = 0; i < size; i++) {
+		chip8.RAM[chip8.PC + i] = codeBuffer[i];
+	}
+}
 
+void decompiler(Chip8 &chip8) {
+	uint16_t code = (chip8.RAM[chip8.PC] << 8) | chip8.RAM[chip8.PC + 1];
+	printf("%04x\t%04x\t", chip8.PC, code);
+
+	OPindex(code);
+
+	printf("\n");
+}
+
+void OPindex(const uint16_t& code) {
 	if (code == 0x00E0) printf("CLS");
 	else if (code == 0x00EE) printf("RET");
 	else if (code >= 0x1000 && code <= 0x1FFF) printf("JP $%04x", code & 0x0FFF); // 1nnn
@@ -135,41 +126,36 @@ void disassembler(Chip8 state) {
 	else if (code >= 0xF065 && code <= 0xFF65) printf("LD V%d, [I]", (code & 0x0F00) >> 8); // Fx65
 
 	else printf("OP not found (%04x)", code);
-
-	printf("\n");
 }
 
-
-void loadROM(uint8_t* codeBuffer, long size) {
-	chip8.PC = 0x200;
-	for (uint16_t i = 0; i < size; i++) {
-		chip8.RAM[chip8.PC] = codeBuffer[i];
-	}
-}
-
-void UnimplementedInstruction() {
+void UnimplementedInstruction(Chip8 &chip8) {
 	printf("Error: Unimplemented Instruction: %02x", chip8.RAM[chip8.PC]);
 	exit(1);
 }
 
-void emulator(uint8_t* codeBuffer, int pc) {
-	uint16_t code = (codeBuffer[pc] << 8) | codeBuffer[pc + 1];
-	printf("%04x\t", pc);
+void emulator(Chip8 &chip8) {
+	uint8_t nextStep = 2;
+	uint16_t code = (chip8.RAM[chip8.PC] << 8) | chip8.RAM[chip8.PC + 1];
+	printf("%04x\t%04x\t\n", chip8.PC, code);
 
 	// Clear the display.
-	if (code == 0x00E0) clearDisplay();
+	if (code == 0x00E0) clearDisplay(chip8);
 
 	// Return from a subroutine.
 	// The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer.
 	else if (code == 0x00EE) {
 		chip8.PC = chip8.stack[chip8.SP];
 		chip8.SP--;
+
+		nextStep = 0;
 	}
 
 	// Jump to location nnn.
 	// The interpreter sets the program counter to nnn.
 	else if (code >= 0x1000 && code <= 0x1FFF) {
 		chip8.PC = code & 0x0FFF;
+
+		nextStep = 0;
 	}
 
 	//Call subroutine at nnn.
@@ -178,6 +164,8 @@ void emulator(uint8_t* codeBuffer, int pc) {
 		chip8.SP++;
 		chip8.stack[chip8.SP] = chip8.PC;
 		chip8.PC = code & 0x0FFF;
+
+		nextStep = 0;
 	}
 
 	// Skip next instruction if Vx = kk.
@@ -185,6 +173,8 @@ void emulator(uint8_t* codeBuffer, int pc) {
 	else if (code >= 0x3000 && code <= 0x3FFF) {
 		if (chip8.V[(code & 0x0F00) >> 8] == (code & 0x00FF)) {
 			chip8.PC += 2;
+
+			nextStep = 0;
 		}
 	}
 
@@ -193,6 +183,8 @@ void emulator(uint8_t* codeBuffer, int pc) {
 	else if (code >= 0x4000 && code <= 0x4FFF) {
 		if (chip8.V[(code & 0x0F00) >> 8] == (code & 0x00FF)) {
 			chip8.PC += 2;
+
+			nextStep = 0;
 		}
 	}
 
@@ -202,6 +194,8 @@ void emulator(uint8_t* codeBuffer, int pc) {
 	else if (code >= 0x5000 && code <= 0x5FFF) {
 		if (chip8.V[(code & 0x0F00) >> 8] == chip8.V[(code & 0x00F0) >> 4]) {
 			chip8.PC += 2;
+
+			nextStep = 0;
 		}
 	}
 
@@ -316,6 +310,8 @@ void emulator(uint8_t* codeBuffer, int pc) {
 	else if (code >= 0x9000 && code <= 0x9FFF) {
 		if (chip8.V[(code & 0x0F00) >> 8] != chip8.V[(code & 0x00F0) >> 4]) {
 			chip8.PC += 2;
+
+			nextStep = 0;
 		}
 	}
 
@@ -329,6 +325,8 @@ void emulator(uint8_t* codeBuffer, int pc) {
 	// The program counter is set to nnn plus the value of V0.
 	else if (code >= 0xB000 && code <= 0xBFFF) {
 		chip8.PC = (code & 0x0FFF) + chip8.V[0];
+
+		nextStep = 0;
 	}
 
 	// Set Vx = random byte AND kk.
@@ -336,20 +334,48 @@ void emulator(uint8_t* codeBuffer, int pc) {
 	// which is then ANDed with the value kk.The results are stored in Vx.
 	// See instruction 8xy2 for more information on AND.
 	else if (code >= 0xC000 && code <= 0xCFFF) {
-		chip8.V[(code & 0x0F00) >> 8] = xoshiro.randrange(0, 255) & (code & 0xFF);
+		chip8.V[(code & 0x0F00) >> 8] = chip8.random.randrange(0, 255) & (code & 0xFF);
 	}
 
-	else if (code >= 0xD000 && code <= 0xDFFF) UnimplementedInstruction(); // Dxyn
+	// Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
+	// The interpreter reads n bytes from memory, starting at the address stored in I.
+	// These bytes are then displayed as sprites on screen at coordinates(Vx, Vy).
+	// Sprites are XORed onto the existing screen.
+	// If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0. 
+	// If the sprite is positioned so part of it is outside the coordinates of the display, 
+	// it wraps around to the opposite side of the screen.
+	// See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip - 8 screen and sprites.
+	// 
+	// Copyright(c) 2018 Ayman Bagabas
+	// This opcode implementation is copied from aymanbagabas' Chip8 Emulator (https://github.com/aymanbagabas/C8emu)
+	// 
 
-	else if (code >= 0xE09E && code <= 0xEF9E) UnimplementedInstruction(); // Ex9E
-	else if (code >= 0xE0A1 && code <= 0xEFA1) UnimplementedInstruction(); // ExA1
+	else if (code >= 0xD000 && code <= 0xDFFF) {
+		chip8.V[0xF] = 0;
+		for (int j = 0; j < (code & 0x000F); j++) {
+			uint8_t sprite = chip8.RAM[chip8.I + j];
+
+			for (int i = 0; i < 8; i++) {
+				int x = (chip8.V[(code & 0x0F00) >> 8] + i) % WIDTH;
+				int y = (chip8.V[(code & 0x00F0) >> 4] + j) % HEIGHT;
+				if ((sprite & (0x80 >> i)) != 0) {
+					if (chip8.graphics[WIDTH * y + x])
+						chip8.V[0xF] = 1;
+					chip8.graphics[WIDTH * y + x] = ~chip8.graphics[WIDTH * y + x];
+				}
+			}
+		}
+	}
+
+	else if (code >= 0xE09E && code <= 0xEF9E) UnimplementedInstruction(chip8); // Ex9E
+	else if (code >= 0xE0A1 && code <= 0xEFA1) UnimplementedInstruction(chip8); // ExA1
 
 	// Set Vx = delay timer value.
 	// The value of DT is placed into Vx.
 	else if (code >= 0xF007 && code <= 0xFF07) {
 		chip8.V[(code & 0x0F00) >> 8] = chip8.DT;
 	}
-	else if (code >= 0xF00A && code <= 0xFF0A) UnimplementedInstruction(); // Fx0A
+	else if (code >= 0xF00A && code <= 0xFF0A) UnimplementedInstruction(chip8); // Fx0A
 
 	// Set delay timer = Vx.
 	// DT is set equal to the value of Vx.
@@ -370,7 +396,7 @@ void emulator(uint8_t* codeBuffer, int pc) {
 	}
 
 
-	else if (code >= 0xF029 && code <= 0xFF29) UnimplementedInstruction(); // Fx29
+	else if (code >= 0xF029 && code <= 0xFF29) UnimplementedInstruction(chip8); // Fx29
 
 	// Store BCD representation of Vx in memory locations I, I+1, and I+2.
 	// The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, 
@@ -399,9 +425,9 @@ void emulator(uint8_t* codeBuffer, int pc) {
 
 	else printf("OP not found (%04x)", code);
 
-	printf("\n");
+	chip8.PC += nextStep;
 }
 
-void clearDisplay() {
+void clearDisplay(Chip8 &chip8) {
 	std::fill(chip8.graphics.begin(), chip8.graphics.end(), 0);
 }

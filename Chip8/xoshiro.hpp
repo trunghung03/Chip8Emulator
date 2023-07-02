@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdint.h>
 
 // Xoshiro256++ written by David Blackman and Sebastiano Vigna.
@@ -25,6 +27,10 @@ public:
 		s[3] = rotl(s[3], 45);
 
 		return result;
+	}
+
+	Xoshiro256() {
+		Xoshiro256(616328097, 108829579, 672443057, 239382367);
 	}
 
 	Xoshiro256(uint64_t s1, uint64_t s2, uint64_t s3, uint64_t s4) {

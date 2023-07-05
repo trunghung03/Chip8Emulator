@@ -177,8 +177,6 @@ void emulator(Chip8 &chip8) {
 	else if (code >= 0x5000 && code <= 0x5FFF) {
 		if (chip8.V[(code & 0x0F00) >> 8] == chip8.V[(code & 0x00F0) >> 4]) {
 			chip8.PC += 2;
-
-			nextStep = 0;
 		}
 	}
 
@@ -384,7 +382,7 @@ void emulator(Chip8 &chip8) {
 		// Set I = I + Vx.
 		// The values of I and Vx are added, and the results are stored in I.
 		case 0x1E:
-			chip8.I += ((code & 0x0F00) >> 8);
+			chip8.I += chip8.V[(code & 0x0F00) >> 8];
 			break;
 
 		case 0x29:

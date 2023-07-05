@@ -8,7 +8,7 @@ Most of the opcodes are working, as well as graphics.
 
 ![Screenshot](photos/screenshot.png)
 
-## Goals
+## Goals (1.0)
 
 - [ ] Pass all of Timendus' ROM test (https://github.com/Timendus/chip8-test-suite)
 	- [x] CHIP-8 splash screen

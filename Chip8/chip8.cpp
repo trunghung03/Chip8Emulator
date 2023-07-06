@@ -127,72 +127,78 @@ void emulator(Chip8 &chip8) {
 	uint16_t code = (chip8.RAM[chip8.PC] << 8) | chip8.RAM[chip8.PC + 1];
 	printf("%04x\t%04x\t\n", chip8.PC, code);
 
-	// Clear the display.
-	if (code == 0x00E0) clearDisplay(chip8);
+	switch (code & 0xF000) {
+	case 0x0000:
+		switch (code) {
+		// Clear the display.
+		case 0x00E0:
+			clearDisplay(chip8);
+			break;
 
-	// Return from a subroutine.
-	// The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer.
-	else if (code == 0x00EE) {
-		chip8.PC = chip8.stack[chip8.SP];
-		chip8.SP--;
-	}
+		// Return from a subroutine.
+		// The interpreter sets the program counter to the address at the top of the stack, then subtracts 1 from the stack pointer.
+		case 0x00EE:
+			chip8.PC = chip8.stack[chip8.SP];
+			chip8.SP--;
+			break;
+		}
+		break;
 
 	// Jump to location nnn.
 	// The interpreter sets the program counter to nnn.
-	else if (code >= 0x1000 && code <= 0x1FFF) {
+	case 0x1000:
 		chip8.PC = code & 0x0FFF;
-
 		nextStep = 0;
-	}
+		break;
 
 	//Call subroutine at nnn.
 	//The interpreter increments the stack pointer, then puts the current PC on the top of the stack.The PC is then set to nnn.
-	else if (code >= 0x2000 && code <= 0x2FFF) {
+	case 0x2000:
 		chip8.SP++;
 		chip8.stack[chip8.SP] = chip8.PC;
 		chip8.PC = code & 0x0FFF;
-
 		nextStep = 0;
-	}
+		break;
 
 	// Skip next instruction if Vx = kk.
 	// The interpreter compares register Vx to kk, and if they are equal, increments the program counter by 2.
-	else if (code >= 0x3000 && code <= 0x3FFF) {
+	case 0x3000:
 		if (chip8.V[(code & 0x0F00) >> 8] == (code & 0x00FF)) {
 			chip8.PC += 2;
 		}
-	}
+		break;
 
 	// Skip next instruction if Vx != kk.
 	// The interpreter compares register Vx to kk, and if they are not equal, increments the program counter by 2.
-	else if (code >= 0x4000 && code <= 0x4FFF) {
+	case 0x4000:
 		if (chip8.V[(code & 0x0F00) >> 8] != (code & 0x00FF)) {
 			chip8.PC += 2;
 		}
-	}
-
+		break;
 
 	// Skip next instruction if Vx = Vy.
 	// The interpreter compares register Vx to register Vy, and if they are equal, increments the program counter by 2.
-	else if (code >= 0x5000 && code <= 0x5FFF) {
+	case 0x5000:
 		if (chip8.V[(code & 0x0F00) >> 8] == chip8.V[(code & 0x00F0) >> 4]) {
 			chip8.PC += 2;
 		}
-	}
-
+		break;
+	
 	// Set Vx = kk.
 	// The interpreter puts the value kk into register Vx.
-	else if (code >= 0x6000 && code <= 0x6FFF) {
+	case 0x6000:
 		chip8.V[(code & 0x0F00) >> 8] = code & 0x00FF;
-	}
+		break;
 
 	// Set Vx = Vx + kk.
 	// Adds the value kk to the value of register Vx, then stores the result in Vx.
-	else if (code >= 0x7000 && code <= 0x7FFF) {
+	case 0x7000:
 		chip8.V[(code & 0x0F00) >> 8] += code & 0x00FF;
-	}
+		break;
 
-	else if (code >= 0x8000 && code <= 0x8FFF) {
+	// Arithmetic 
+	case 0x8000:
+		{
 		uint8_t lastDigit = (code & 0x000F);
 		uint8_t result = 0;
 
@@ -283,40 +289,38 @@ void emulator(Chip8 &chip8) {
 			printf("OP not found (%04x)", code);
 			break;
 		} // 0x8xy0 -> 0x8xyE
-	}
-
+		break;
+		}
 
 	// Skip next instruction if Vx != Vy.
 	// The values of Vx and Vy are compared, and if they are not equal, the program counter is increased by 2.
-	else if (code >= 0x9000 && code <= 0x9FFF) {
+	case 0x9000:
 		if (chip8.V[(code & 0x0F00) >> 8] != chip8.V[(code & 0x00F0) >> 4]) {
 			chip8.PC += 2;
-
 			nextStep = 0;
 		}
-	}
+		break;
 
 	// Set I = nnn.
 	// The value of register I is set to nnn.
-	else if (code >= 0xA000 && code <= 0xAFFF) {
+	case 0xA000:
 		chip8.I = code & 0x0FFF;
-	}
+		break;
 
 	// Jump to location nnn + V0.
 	// The program counter is set to nnn plus the value of V0.
-	else if (code >= 0xB000 && code <= 0xBFFF) {
+	case 0xB000:
 		chip8.PC = (code & 0x0FFF) + chip8.V[0];
-
 		nextStep = 0;
-	}
+		break;
 
 	// Set Vx = random byte AND kk.
 	// The interpreter generates a random number from 0 to 255, 
 	// which is then ANDed with the value kk.The results are stored in Vx.
 	// See instruction 8xy2 for more information on AND.
-	else if (code >= 0xC000 && code <= 0xCFFF) {
+	case 0xC000:
 		chip8.V[(code & 0x0F00) >> 8] = chip8.random.randrange(0, 255) & (code & 0xFF);
-	}
+		break;
 
 	// Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
 	// The interpreter reads n bytes from memory, starting at the address stored in I.
@@ -327,38 +331,52 @@ void emulator(Chip8 &chip8) {
 	// it wraps around to the opposite side of the screen.
 	// See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip - 8 screen and sprites.
 	// 
-	// Copyright(c) 2018 Ayman Bagabas
-	// This opcode implementation is copied from aymanbagabas' Chip8 Emulator (https://github.com/aymanbagabas/C8emu)
+	// Credit to Ayman Bagabas
+	// This opcode implementation is based on aymanbagabas' Chip8 Emulator (https://github.com/aymanbagabas/C8emu)
 	// 
-
-	else if (code >= 0xD000 && code <= 0xDFFF) {
+	case 0xD000:
+	{
+		uint8_t x = chip8.V[(code & 0x0F00) >> 8];
+		uint8_t y = chip8.V[(code & 0x00F0) >> 4];
 		chip8.V[0xF] = 0;
+
 		for (int j = 0; j < (code & 0x000F); j++) {
 			uint8_t sprite = chip8.RAM[chip8.I + j];
 
 			for (int i = 0; i < 8; i++) {
-				int x = (chip8.V[(code & 0x0F00) >> 8] + i) % WIDTH;
-				int y = (chip8.V[(code & 0x00F0) >> 4] + j) % HEIGHT;
-				if ((sprite & (0x80 >> i)) != 0) {
-					if (chip8.graphics[WIDTH * y + x])
+				uint8_t drawX = (x + i) % WIDTH;
+				uint8_t drawY = (y + j) % HEIGHT;
+				if ((sprite & (0x80 >> i))) {
+					if (chip8.graphics[WIDTH * drawY + drawX])
 						chip8.V[0xF] = 1;
-					chip8.graphics[WIDTH * y + x] = ~chip8.graphics[WIDTH * y + x];
+					chip8.graphics[WIDTH * drawY + drawX] ^= 1;
 				}
 			}
 		}
+		break;
 	}
 
-	else if (code >= 0xE09E && code <= 0xEF9E) UnimplementedInstruction(chip8); // Ex9E
-	else if (code >= 0xE0A1 && code <= 0xEFA1) UnimplementedInstruction(chip8); // ExA1
+	case 0xE000:
+	{
+		switch (code & 0xF0FF) {
+		case 0xE09E:
+			UnimplementedInstruction(chip8); // Ex9E
+			break;
+		case 0xE0A1:
+			UnimplementedInstruction(chip8); // ExA1
+			break;
+		}
+		break;
+	}
 
-	
-	else if (code >= 0xF000 && code <= 0xFFFF) {
+	case 0xF000:
+	{
 		uint16_t lastDigit = code & 0x00FF;
 		uint8_t Vx = 0;
 
 		switch (lastDigit) {
-		// Set Vx = delay timer value.
-		// The value of DT is placed into Vx.
+			// Set Vx = delay timer value.
+			// The value of DT is placed into Vx.
 		case 0x07:
 			chip8.V[(code & 0x0F00) >> 8] = chip8.DT;
 			break;
@@ -367,20 +385,20 @@ void emulator(Chip8 &chip8) {
 			UnimplementedInstruction(chip8); // Fx0A
 			break;
 
-		// Set delay timer = Vx.
-		// DT is set equal to the value of Vx.
+			// Set delay timer = Vx.
+			// DT is set equal to the value of Vx.
 		case 0x15:
 			chip8.DT = chip8.V[(code & 0x0F00) >> 8];
 			break;
 
-		// Set sound timer = Vx.
-		// ST is set equal to the value of Vx.
+			// Set sound timer = Vx.
+			// ST is set equal to the value of Vx.
 		case 0x18:
 			chip8.ST = chip8.V[(code & 0x0F00) >> 8];
 			break;
 
-		// Set I = I + Vx.
-		// The values of I and Vx are added, and the results are stored in I.
+			// Set I = I + Vx.
+			// The values of I and Vx are added, and the results are stored in I.
 		case 0x1E:
 			chip8.I += chip8.V[(code & 0x0F00) >> 8];
 			break;
@@ -389,9 +407,9 @@ void emulator(Chip8 &chip8) {
 			UnimplementedInstruction(chip8); // Fx29
 			break;
 
-		// Store BCD representation of Vx in memory locations I, I+1, and I+2.
-		// The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, 
-		// the tens digit at location I + 1, and the ones digit at location I + 2.
+			// Store BCD representation of Vx in memory locations I, I+1, and I+2.
+			// The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, 
+			// the tens digit at location I + 1, and the ones digit at location I + 2.
 		case 0x33:
 			Vx = chip8.V[(code & 0x0F00) >> 8];
 			chip8.RAM[chip8.I + 2] = Vx % 10; // ones digit
@@ -399,16 +417,16 @@ void emulator(Chip8 &chip8) {
 			chip8.RAM[chip8.I] = Vx / 100 % 10; // hundreds digit
 			break;
 
-		// Store registers V0 through Vx in memory starting at location I.
-		// The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
+			// Store registers V0 through Vx in memory starting at location I.
+			// The interpreter copies the values of registers V0 through Vx into memory, starting at the address in I.
 		case 0x55:
 			for (uint8_t i = 0x0; i <= ((code & 0x0F00) >> 8); i++) {
 				chip8.RAM[chip8.I + i] = chip8.V[i];
 			}
 			break;
 
-		// Read registers V0 through Vx from memory starting at location I.
-		// The interpreter reads values from memory starting at location I into registers V0 through Vx.
+			// Read registers V0 through Vx from memory starting at location I.
+			// The interpreter reads values from memory starting at location I into registers V0 through Vx.
 		case 0x65:
 			for (uint8_t i = 0x0; i <= ((code & 0x0F00) >> 8); i++) {
 				chip8.V[i] = chip8.RAM[chip8.I + i];
@@ -419,9 +437,11 @@ void emulator(Chip8 &chip8) {
 			printf("OP not found (%04x)", code);
 			break;
 		}
+		break;
 	}
-
-	else printf("OP not found (%04x)", code);
+	default:
+		printf("OP not found (%04x)", code);
+	}
 
 	chip8.PC += nextStep;
 }

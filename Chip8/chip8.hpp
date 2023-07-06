@@ -26,8 +26,9 @@ struct Chip8 {
 	uint16_t PC; // Program counter
 	uint8_t SP; // Stack pointer
 	std::array<uint16_t, 16> stack; // The stack
-	std::array<uint8_t, MAX_VRAM> graphics;
-	Xoshiro256 random;
+	std::array<uint8_t, MAX_VRAM> graphics; // VRAM
+
+	Xoshiro256 random; // Random
 
 	Chip8() {
 		RAM = {};
